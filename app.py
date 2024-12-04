@@ -3,9 +3,17 @@ from pymysql import connections
 import os
 import random
 import argparse
+import boto3
+from botocore.exceptions import NoCredentialsError
+import shutil
 
 
 app = Flask(__name__)
+
+# S3 Configuration
+S3_BUCKET = os.environ.get("S3_BUCKET") or "clo835-finalproject"
+S3_IMAGE_PATH = os.environ.get("S3_IMAGE_PATH") or "s3://clo835-finalproject/background.png"
+LOCAL_IMAGE_PATH = "static/background.png"
 
 DBHOST = os.environ.get("DBHOST") or "localhost"
 DBUSER = os.environ.get("DBUSER") or "root"
@@ -44,13 +52,39 @@ SUPPORTED_COLORS = ",".join(color_codes.keys())
 # Generate a random color
 COLOR = random.choice(["red", "green", "blue", "blue2", "darkblue", "pink", "lime"])
 
+# S3 Client Setup
+s3_client = boto3.client('s3')
 
+def download_image_from_s3(s3_path, local_path):
+    try:
+        # Parse S3 path
+        s3_path = s3_path.replace("s3://", "")
+        bucket, key = s3_path.split("/", 1)
+        
+        print(f"Attempting to download from bucket: {bucket}, key: {key}")
+        
+        s3_client.download_file(bucket, key, local_path)
+        print(f"Image successfully downloaded to {local_path}")
+    except NoCredentialsError:
+        print("Error: AWS credentials not found!")
+        print("Please ensure your AWS credentials are correctly configured.")
+    except s3_client.exceptions.NoSuchKey:
+        print(f"Error: The specified key {key} does not exist in the bucket {bucket}")
+    except s3_client.exceptions.NoSuchBucket:
+        print(f"Error: The specified bucket {bucket} does not exist")
+    except Exception as e:
+        print(f"Unexpected error downloading image: {str(e)}")
+        
 @app.route("/", methods=['GET', 'POST'])
 def home():
+    # Fetch the image from S3 and save it locally
+    download_image_from_s3(S3_IMAGE_PATH, LOCAL_IMAGE_PATH)
     return render_template('addemp.html', color=color_codes[COLOR])
 
 @app.route("/about", methods=['GET','POST'])
 def about():
+    # Fetch the image from S3 and save it locally
+    download_image_from_s3(S3_IMAGE_PATH, LOCAL_IMAGE_PATH)
     return render_template('about.html', color=color_codes[COLOR])
     
 @app.route("/addemp", methods=['POST'])
