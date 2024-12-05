@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_from_directory
 from pymysql import connections
 import os
 import random
@@ -11,9 +11,9 @@ import shutil
 app = Flask(__name__)
 
 # S3 Configuration
-S3_BUCKET = os.environ.get("S3_BUCKET") or "clo835-finalproject"
-S3_IMAGE_PATH = os.environ.get("S3_IMAGE_PATH") or "s3://clo835-finalproject/background.png"
-LOCAL_IMAGE_PATH = "static/background.png"
+S3_BUCKET = os.environ.get("S3_BUCKET", "clo835-finalproject")
+S3_IMAGE_PATH = os.environ.get("S3_IMAGE_PATH", "s3://clo835-finalproject/background.png")
+LOCAL_IMAGE_PATH = os.path.join('static', 'background.png')
 
 DBHOST = os.environ.get("DBHOST") or "localhost"
 DBUSER = os.environ.get("DBUSER") or "root"
@@ -55,30 +55,85 @@ COLOR = random.choice(["red", "green", "blue", "blue2", "darkblue", "pink", "lim
 # S3 Client Setup
 s3_client = boto3.client('s3')
 
-def download_image_from_s3(s3_path, local_path):
+# Ensure static directory exists
+os.makedirs('static', exist_ok=True)
+
+# Add this to your existing code
+def list_s3_bucket_contents(bucket):
     try:
-        # Parse S3 path
-        s3_path = s3_path.replace("s3://", "")
-        bucket, key = s3_path.split("/", 1)
+        s3_client = boto3.client('s3')
+        response = s3_client.list_objects_v2(Bucket=bucket)
         
-        print(f"Attempting to download from bucket: {bucket}, key: {key}")
+        print(f"Contents of S3 Bucket: {bucket}")
+        if 'Contents' in response:
+            for obj in response['Contents']:
+                print(f"- {obj['Key']}")
+        else:
+            print("Bucket is empty or you don't have list permissions.")
         
+    except Exception as e:
+        print(f"Error listing bucket contents: {e}")
+
+# Call this function before trying to download
+list_s3_bucket_contents(S3_BUCKET)
+
+def download_image_from_s3(bucket, key, local_path):
+    """
+    Download an image from S3 to a local path.
+    
+    :param bucket: S3 bucket name
+    :param key: S3 object key (path to the image)
+    :param local_path: Local path to save the image
+    """
+    try:
+        # Create S3 client
+        s3_client = boto3.client('s3')
+        
+        # Download the file
         s3_client.download_file(bucket, key, local_path)
-        print(f"Image successfully downloaded to {local_path}")
+        print(f"Successfully downloaded image from S3: {bucket}/{key} to {local_path}")
+        return True
     except NoCredentialsError:
         print("Error: AWS credentials not found!")
-        print("Please ensure your AWS credentials are correctly configured.")
+        return False
     except s3_client.exceptions.NoSuchKey:
         print(f"Error: The specified key {key} does not exist in the bucket {bucket}")
+        return False
     except s3_client.exceptions.NoSuchBucket:
         print(f"Error: The specified bucket {bucket} does not exist")
+        return False
     except Exception as e:
         print(f"Unexpected error downloading image: {str(e)}")
+        return False
+
+def ensure_background_image():
+    """
+    Ensure the background image is downloaded from S3.
+    If download fails, use a default or existing image.
+    """
+    if not os.path.exists(LOCAL_IMAGE_PATH):
+        # Try to download from S3
+        success = download_image_from_s3(S3_BUCKET, S3_IMAGE_PATH, LOCAL_IMAGE_PATH)
+        
+        if not success:
+            # Optionally, you could have a default image or skip background
+            print("Could not download background image from S3")
+
+# Ensure background image is downloaded on app startup
+ensure_background_image()
+        
+@app.route('/image')
+def serve_image():
+    image_path = 'static/background.png'
+    if os.path.exists(image_path):
+        return send_from_directory(os.path.dirname(image_path), os.path.basename(image_path))
+    else:
+        return "Image not found", 404
         
 @app.route("/", methods=['GET', 'POST'])
 def home():
     # Fetch the image from S3 and save it locally
-    download_image_from_s3(S3_IMAGE_PATH, LOCAL_IMAGE_PATH)
+    ensure_background_image()
     return render_template('addemp.html', color=color_codes[COLOR])
 
 @app.route("/about", methods=['GET','POST'])
