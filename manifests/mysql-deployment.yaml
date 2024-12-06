@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+    component: backend
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+      component: backend
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mysql
+        component: backend
+    spec:
+      volumes:
+        - name: mysql-pvc
+          persistentVolumeClaim:
+            claimName: mysql-pvc
+      serviceAccountName: clo835-group2
+      containers:
+      - name: mysql-db
+        image: 510280374120.dkr.ecr.us-east-1.amazonaws.com/clo835-project:mysql-v0.1
+        volumeMounts:
+        - name: mysql-pvc
+          mountPath: /var/lib/mysql
+        ports:
+        - containerPort: 3306
+        env:
+          - name: DBPWD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secrets
+                key: mysql-password
+          - name: DBUSER
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secrets
+                key: mysql-user
+
