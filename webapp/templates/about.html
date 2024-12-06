@@ -1,6 +1,6 @@
 <!doctype html>
-<title>Hello from Flask</title>
-<body style="background: {{ color }};"></body>
+<title>Hello from {{my_name}}</title>
+<body style="background-image: url('/static/background.png'); background-size: cover; background-position: center;"></body>
 <div style="color: #e4e4e4;
     text-align:  center;
     height: 90px;
@@ -8,7 +8,7 @@
 {% if name %}
   <h1>Hello from {{ name }}!</h1>
 {% else %}
-  <h1>Hello From CLO835!</h1>
+  <h1>Hello From the Fall CLO835 class Jonmarc Jackson !</h1>
 {% endif %}
 
   {% if contents %}

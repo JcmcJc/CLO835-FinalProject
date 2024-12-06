@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: background-config
+  namespace: default
+data:
+  image_url: "s3://clo835-finalproject/background.png"
+  S3_BUCKET: "clo835-finalproject"
+  S3_IMAGE_PATH: "s3://clo835-finalproject/background.png"

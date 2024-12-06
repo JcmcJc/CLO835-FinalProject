@@ -1,27 +1,30 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, url_for
 from pymysql import connections
 import os
 import random
 import argparse
-
-
+import boto3
+import botocore
 app = Flask(__name__)
 
 DBHOST = os.environ.get("DBHOST") or "localhost"
 DBUSER = os.environ.get("DBUSER") or "root"
-DBPWD = os.environ.get("DBPWD") or "password"
+DBPWD = os.environ.get("DBPWD") or "passwors"
 DATABASE = os.environ.get("DATABASE") or "employees"
 COLOR_FROM_ENV = os.environ.get('APP_COLOR') or "lime"
 DBPORT = int(os.environ.get("DBPORT"))
+
+#ENV varaibles to grab image and show my name
+BACKGROUND_IMAGE = os.environ.get("BACKGROUND_IMAGE") or "Invalid image"
+MY_NAME = os.environ.get('NAME') or "Jonmarc Jackson"
 
 # Create a connection to the MySQL database
 db_conn = connections.Connection(
     host= DBHOST,
     port=DBPORT,
     user= DBUSER,
-    password= DBPWD, 
+    password= DBPWD,
     db= DATABASE
-    
 )
 output = {}
 table = 'employee';
@@ -44,17 +47,42 @@ SUPPORTED_COLORS = ",".join(color_codes.keys())
 # Generate a random color
 COLOR = random.choice(["red", "green", "blue", "blue2", "darkblue", "pink", "lime"])
 
-
 @app.route("/", methods=['GET', 'POST'])
 def home():
-    return render_template('addemp.html', color=color_codes[COLOR])
+    image_url = url_for('static', filename='background.png')
+    return render_template('addemp.html', background_image = image_url, my_name = MY_NAME)
+    
+#Download image from S3 bucket    
+@app.route("/download", methods=['GET','POST'])
+def download_image(image_url):
+   try:
+         bucket = image_url.split('//')[1].split('.')[0]
+         object_name = '/'.join(image_url.split('//')[1].split('/')[1:])
+
+         s3 = boto3.resource('s3')
+         image_dir = "static" #Default directory
+         
+         if not os.path.exists(image_dir):
+                 os.makedirs(image_dir)
+         output = os.path.join(image_dir, "background.png")
+         s3.Bucket(bucket).download_file(object_name, output)
+
+         return output
+
+   except botocore.exceptions.ClientError as e:
+                if e.response['Error']['Code'] == "404":
+                    print("This object is not in the bucket.")
+                else:
+                    raise
 
 @app.route("/about", methods=['GET','POST'])
 def about():
-    return render_template('about.html', color=color_codes[COLOR])
+    image_url = url_for('static', filename='background.png')
+    return render_template('about.html', background_image = image_url, my_name = MY_NAME)
     
 @app.route("/addemp", methods=['POST'])
 def AddEmp():
+    image_url = url_for('static', filename='background.png')
     emp_id = request.form['emp_id']
     first_name = request.form['first_name']
     last_name = request.form['last_name']
@@ -75,12 +103,12 @@ def AddEmp():
         cursor.close()
 
     print("all modification done...")
-    return render_template('addempoutput.html', name=emp_name, color=color_codes[COLOR])
+    return render_template('addempoutput.html', name=emp_name, color=color_codes[COLOR], my_name = MY_NAME)
 
 @app.route("/getemp", methods=['GET', 'POST'])
 def GetEmp():
-    return render_template("getemp.html", color=color_codes[COLOR])
-
+    image_url = url_for('static', filename='background.png')
+    return render_template("getemp.html", background_image = image_url, my_name = MY_NAME)
 
 @app.route("/fetchdata", methods=['GET','POST'])
 def FetchData():
@@ -108,10 +136,11 @@ def FetchData():
         cursor.close()
 
     return render_template("getempoutput.html", id=output["emp_id"], fname=output["first_name"],
-                           lname=output["last_name"], interest=output["primary_skills"], location=output["location"], color=color_codes[COLOR])
+                           lname=output["last_name"], interest=output["primary_skills"], location=output["location"], color=color_codes[COLOR], my_name = MY_NAME)
 
 if __name__ == '__main__':
-    
+    #Download the image from s3
+    download_image(BACKGROUND_IMAGE)
     # Check for Command Line Parameters for color
     parser = argparse.ArgumentParser()
     parser.add_argument('--color', required=False)
@@ -133,4 +162,4 @@ if __name__ == '__main__':
         print("Color not supported. Received '" + COLOR + "' expected one of " + SUPPORTED_COLORS)
         exit(1)
 
-    app.run(host='0.0.0.0',port=8080,debug=True)
+    app.run(host='0.0.0.0',port=81,debug=True)
