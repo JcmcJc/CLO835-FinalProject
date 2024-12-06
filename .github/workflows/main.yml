@@ -29,10 +29,11 @@ jobs:
     - name: Build, test, tag, and push SQL image to Amazon ECR
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: clo835-assignment2
-        IMAGE_TAG: mysql-v0.1
+        ECR_REPOSITORY: clo835-project
+        IMAGE_TAG: MySQL-v0.1
       run: |
         ls -ltra
+        cd database/
         # Docker build command
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f Dockerfile_mysql . 
         # Unit test
@@ -46,10 +47,11 @@ jobs:
     - name: Build, test, tag, and push webapp image to Amazon ECR
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: clo835-assignment2
+        ECR_REPOSITORY: clo835-project
         IMAGE_TAG: webapp-v0.1
       run: |
         ls -ltra
+        cd webapp/
         # Docker build command
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f Dockerfile .
         # Unit test
@@ -58,31 +60,13 @@ jobs:
         export DATABASE=employees
         export DBPWD=pw
         export APP_COLOR=blue
+        export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+        export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        export AWS_SESSION_TOKEN=${{ secrets.AWS_SESSION_TOKEN }}
+        export BACKGROUND_IMAGE=https://clo835-finalproject.s3.us-east-1.amazonaws.com/background.png
         CONTAINER_ID=$(docker run -d -p 8080:8080 -e DBPORT=$DBPORT -e DBUSER=$DBUSER -e DBPWD=$DBPWD $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG)
         DBHOST=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CONTAINER_ID)
         echo "Database Host: $DBHOST"
-        docker run -d -p 8081:8080  -e DBHOST=$DBHOST -e DBPORT=$DBPORT -e  DBUSER=$DBUSER -e DBPWD=$DBPWD  $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        docker ps
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-    - name: Build, test, tag, and push webapp image to Amazon ECR V2
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: clo835-assignment2
-        IMAGE_TAG: webapp-v0.2
-      run: |
-        ls -ltra
-        # Docker build command
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f Dockerfile .
-        # Unit test
-        export DBPORT=3306
-        export DBUSER=root
-        export DATABASE=employees
-        export DBPWD=pw
-        export APP_COLOR=blue
-        CONTAINER_ID=$(docker run -d -p 8080:8080 -e DBPORT=$DBPORT -e DBUSER=$DBUSER -e DBPWD=$DBPWD $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG)
-        DBHOST=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CONTAINER_ID)
-        echo "Database Host: $DBHOST"
-        docker run -d -p 8081:8080  -e DBHOST=$DBHOST -e DBPORT=$DBPORT -e  DBUSER=$DBUSER -e DBPWD=$DBPWD  $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker run -d -p 8080:81  -e DBHOST=$DBHOST -e DBPORT=$DBPORT -e  DBUSER=$DBUSER -e DBPWD=$DBPWD -e BACKGROUND_IMAGE=$BACKGROUND_IMAGE -e AWS_SECRET_ACCESS_ID=$AWS_SECRET_ACCESS_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         docker ps
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
