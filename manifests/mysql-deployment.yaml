@@ -24,14 +24,14 @@ spec:
       serviceAccountName: clo835-group2
       containers:
       - name: mysql-db
-        image: 510280374120.dkr.ecr.us-east-1.amazonaws.com/clo835-project:mysql-v0.1
+        image: 510280374120.dkr.ecr.us-east-1.amazonaws.com/clo835-project:MySQL-v0.1
         volumeMounts:
         - name: mysql-pvc
           mountPath: /var/lib/mysql
         ports:
         - containerPort: 3306
         env:
-          - name: DBPWD
+          - name: MYSQL_ROOT_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: mysql-secrets
@@ -41,4 +41,3 @@ spec:
               secretKeyRef:
                 name: mysql-secrets
                 key: mysql-user
-

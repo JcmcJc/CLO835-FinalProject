@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+  labels:
+    app: employees
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: employees
+  template:
+    metadata:
+      labels:
+        app: employees
+    spec:
+      serviceAccountName: clo835-group2
+      containers:
+        - name: webapp
+          image: 510280374120.dkr.ecr.us-east-1.amazonaws.com/clo835-project:webapp-v0.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 81
+          env:
+            - name: DBUSER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets
+                  key: mysql-user
+            - name: DBPWD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets
+                  key: mysql-password
+
+            - name: DBHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: variables
+                  key: DBHOST
+            - name: DBPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: variables
+                  key: DBPORT
+            - name: MY_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: variables
+                  key: MY_NAME
+            - name: BACKGROUND_IMAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: variables
+                  key: BACKGROUND_IMAGE
+            - name: APP_COLOR
+              valueFrom:
+                configMapKeyRef:
+                  name: variables
+                  key: APP_COLOR
