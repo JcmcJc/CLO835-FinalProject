@@ -11,5 +11,3 @@ data:
   APP_COLOR: "blue"
   DATABASE: "employees"
   DBPORT: "3306"
-
-  

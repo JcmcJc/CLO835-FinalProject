@@ -3,16 +3,16 @@ kind: Deployment
 metadata:
   name: webapp
   labels:
-    app: employees
+    app: webapp
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: employees
+      app: webapp
   template:
     metadata:
       labels:
-        app: employees
+        app: webapp
     spec:
       serviceAccountName: clo835-group2
       containers:
