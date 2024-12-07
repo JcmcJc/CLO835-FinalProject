@@ -1,9 +1,13 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: background-config
-  namespace: default
+  name: variables
+  namespace: final
 data:
-  image_url: "s3://clo835-finalproject/background.png"
-  S3_BUCKET: "clo835-finalproject"
-  S3_IMAGE_PATH: "s3://clo835-finalproject/background.png"
+  MY_NAME: "Jonmarc recording"
+  DBHOST: "mysql.final.svc.cluster.local"
+  BACKGROUND_IMAGE: "https://clo835-finalproject.s3.us-east-1.amazonaws.com/background.png"
+  #BACKGROUND_IMAGE: "https://clo835-finalproject.s3.us-east-1.amazonaws.com/background2.png"
+  APP_COLOR: "blue"
+  DATABASE: "employees"
+  DBPORT: "3306"
