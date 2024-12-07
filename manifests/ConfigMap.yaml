@@ -5,10 +5,11 @@ metadata:
   namespace: final
 data:
   MY_NAME: "Jonmarc recording"
+  DBHOST: "mysql.final.svc.cluster.local"
   BACKGROUND_IMAGE: "https://clo835-finalproject.s3.us-east-1.amazonaws.com/background.png"
   #BACKGROUND_IMAGE: "https://clo835-finalproject.s3.us-east-1.amazonaws.com/background2.png"
   APP_COLOR: "blue"
   DATABASE: "employees"
   DBPORT: "3306"
-  DBPWD: "pw"
+
   
